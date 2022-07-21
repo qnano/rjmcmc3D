@@ -2,7 +2,7 @@ import numpy as np
 import ctypes as ct
 import numpy.ctypeslib as ctl
 from scipy.stats import poisson, beta
-
+import tqdm
 from fastpsf import Context, Estimator
 from priors_release import gauss1d, Prior_calculator, prior_I, prior_xyz, prior_bg, prior_k
 
@@ -778,20 +778,21 @@ def rjmcmc_3d_localization(jump_list, jump_prob, n_eval, numFrames,
         ev_chain = np.zeros([n_eval, roisize, roisize, chain_length])
         ev_chain[:,:,:,0] = (ll_func.ExpectedValue(pos_chain[:,:,:,0], I_chain[:,:,:,0]*state_chain[:,:,None,0]) + bg_chain[:,0,None,None,None]).transpose([0,2,3,1]).squeeze()
     
-    for i in range(chain_length-1):
-        # jump selection
-        a = np.random.choice(np.arange(len(jump_list)), p = jump_prob)      # for logging the selected jumps and acceptance rates
-        jump = jump_list[a]
-        jump_tracker[i] = a
-        # execute the jump
-        pos_chain[:,:,:,i+1], I_chain[:,:,:,i+1], bg_chain[:,i+1], state_chain[:,:,i+1], acceptance[:,a,i], ll_chain[:,i+1], prior_chain[:,i+1] = jump.calc(pos_chain[:,:,:,i], I_chain[:,:,:,i], bg_chain[:,i], state_chain[:,:,i], k_max, smpIndices, ll_chain[:,i], prior_chain[:,i])
-
-        if save_ev:
-            ev_chain[:,:,:,i+1] = (ll_func.ExpectedValue(pos_chain[:,:,:,i+1], I_chain[:,:,:,i+1]*state_chain[:,:,None,i+1]) + bg_chain[:,i+1,None,None,None]).transpose([0,2,3,1]).squeeze()
-
-        
-        if np.mod(i,200) == 0:           # print an update every x iterations
-            print(print_preamble + f'iteration: {i}')# | moves: {moves_accepted}/{moves} | splits: {splits_accepted}/{splits} | merges: {merges_accepted}/{merges} | births: {births_accepted}/{births} | deaths: {deaths_accepted}/{deaths} ')
+    with tqdm.tqdm(total = chain_length - 1) as pb:
+        for i in range(chain_length-1):
+            # jump selection
+            a = np.random.choice(np.arange(len(jump_list)), p = jump_prob)      # for logging the selected jumps and acceptance rates
+            jump = jump_list[a]
+            jump_tracker[i] = a
+            # execute the jump
+            pos_chain[:,:,:,i+1], I_chain[:,:,:,i+1], bg_chain[:,i+1], state_chain[:,:,i+1], acceptance[:,a,i], ll_chain[:,i+1], prior_chain[:,i+1] = jump.calc(pos_chain[:,:,:,i], I_chain[:,:,:,i], bg_chain[:,i], state_chain[:,:,i], k_max, smpIndices, ll_chain[:,i], prior_chain[:,i])
+    
+            if save_ev:
+                ev_chain[:,:,:,i+1] = (ll_func.ExpectedValue(pos_chain[:,:,:,i+1], I_chain[:,:,:,i+1]*state_chain[:,:,None,i+1]) + bg_chain[:,i+1,None,None,None]).transpose([0,2,3,1]).squeeze()
+    
+            #if np.mod(i,200) == 0:           # print an update every x iterations
+            #    pb.set_description(print_preamble + f'iteration: {i} | moves: {moves_accepted}/{moves} | splits: {splits_accepted}/{splits} | merges: {merges_accepted}/{merges} | births: {births_accepted}/{births} | deaths: {deaths_accepted}/{deaths} ')
+            pb.update(1)
 
     if save_ev:
         return pos_chain, I_chain, bg_chain, state_chain, acceptance, jump_tracker, ll_chain, prior_chain, ev_chain
