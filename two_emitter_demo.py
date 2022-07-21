@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from fastpsf import Context#, Estimator
 from fastpsf import GaussianPSFMethods, Gauss3D_Calibration
+from fastpsf.mcmc import MCLocalizer, PDFInfo
 
 from priors_release import Prior_calculator, gauss1d, prior_k, prior_I, prior_bg, prior_xyz
 from moves_release import RJMCMC_Object
