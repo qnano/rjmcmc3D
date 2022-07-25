@@ -14,7 +14,7 @@ from fastpsf.mcmc import MCLocalizer, PDFInfo
 from priors_release import Prior_calculator, gauss1d, prior_k, prior_I, prior_bg, prior_xyz
 from moves_release import RJMCMC_Object
 
-np.seterr(under='ignore', over='ignore')
+np.seterr(divide='ignore', invalid='ignore')
 
 #%% create PDF
 
